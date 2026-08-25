@@ -17,8 +17,11 @@ import (
 // @BasePath /
 func main() {
 	taskRepository := inmemory.NewTask()
+	userRepository := inmemory.NewUser()
+	sessionRepository := inmemory.NewSession()
 	taskService := service.NewTask(taskRepository)
-	server := httpapi.NewServer(taskService)
+	authService := service.NewAuth(userRepository, sessionRepository)
+	server := httpapi.NewServer(taskService, authService)
 
 	log.Fatal(http.ListenAndServe(config.Address(), server.Handler()))
 }
