@@ -16,9 +16,9 @@ import (
 // @host localhost:8000
 // @BasePath /
 func main() {
-	repository := inmemory.NewTask()
-	usecase := service.NewTask(repository)
-	handler := httpapi.NewTask(usecase)
+	taskRepository := inmemory.NewTask()
+	taskService := service.NewTask(taskRepository)
+	server := httpapi.NewServer(taskService)
 
-	log.Fatal(http.ListenAndServe(config.Address(), handler.Handler()))
+	log.Fatal(http.ListenAndServe(config.Address(), server.Handler()))
 }
