@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"time"
 
-	"postupashki-backend-start-hw3/internal/task-service/broker"
 	"postupashki-backend-start-hw3/internal/task-service/config"
 	taskhttp "postupashki-backend-start-hw3/internal/task-service/http"
 	"postupashki-backend-start-hw3/internal/task-service/repository/inmemory"
+	"postupashki-backend-start-hw3/internal/task-service/repository/rabbitmq"
 	"postupashki-backend-start-hw3/internal/task-service/usecases/service"
 )
 
@@ -23,9 +23,9 @@ func main() {
 	log.Fatal(http.ListenAndServe(config.Address(), server.Handler()))
 }
 
-func connect() *broker.RabbitMQ {
+func connect() *rabbitmq.RabbitMQ {
 	for {
-		queue, err := broker.NewRabbitMQ(config.RabbitMQURL())
+		queue, err := rabbitmq.NewRabbitMQ(config.RabbitMQURL())
 		if err == nil {
 			return queue
 		}

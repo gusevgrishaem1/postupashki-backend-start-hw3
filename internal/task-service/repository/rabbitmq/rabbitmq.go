@@ -1,6 +1,14 @@
-package broker
+package rabbitmq
 
-import amqp "github.com/rabbitmq/amqp091-go"
+import (
+	"context"
+	"encoding/json"
+	"time"
+
+	amqp "github.com/rabbitmq/amqp091-go"
+
+	"postupashki-backend-start-hw3/internal/contracts"
+)
 
 const queue = "code_submissions"
 
@@ -27,11 +35,16 @@ func NewRabbitMQ(url string) (*RabbitMQ, error) {
 	return &RabbitMQ{connection: connection, channel: channel}, nil
 }
 
-func (b *RabbitMQ) Consume() (<-chan amqp.Delivery, error) {
-	if err := b.channel.Qos(1, 0, false); err != nil {
-		return nil, err
+func (b *RabbitMQ) Publish(submission contracts.Submission) error {
+	body, err := json.Marshal(submission)
+	if err != nil {
+		return err
 	}
-	return b.channel.Consume(queue, "", false, false, false, false, nil)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	return b.channel.PublishWithContext(ctx, "", queue, false, false, amqp.Publishing{
+		ContentType: "application/json", DeliveryMode: amqp.Persistent, Body: body,
+	})
 }
 
 func (b *RabbitMQ) Close() error {

@@ -11,14 +11,10 @@ import (
 
 type Task struct {
 	repository repository.Task
-	publisher  Publisher
+	publisher  repository.Publisher
 }
 
-type Publisher interface {
-	Publish(contracts.Submission) error
-}
-
-func NewTask(repository repository.Task, publisher Publisher) *Task {
+func NewTask(repository repository.Task, publisher repository.Publisher) *Task {
 	service := &Task{repository: repository, publisher: publisher}
 	return service
 }

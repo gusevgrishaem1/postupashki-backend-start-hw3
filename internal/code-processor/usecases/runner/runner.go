@@ -13,6 +13,8 @@ import (
 	containertypes "github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/api/types/mount"
 	"github.com/moby/moby/client"
+
+	"postupashki-backend-start-hw3/internal/code-processor/usecases"
 )
 
 type runtimeConfig struct {
@@ -39,22 +41,22 @@ var runtimes = map[string]runtimeConfig{
 	},
 }
 
-func (r *Runner) Run(ctx context.Context, request RunRequest) (RunResult, error) {
+func (r *Runner) Run(ctx context.Context, request usecases.RunRequest) (usecases.RunResult, error) {
 	config, ok := runtimes[request.Runtime]
 	if !ok {
-		return RunResult{}, fmt.Errorf("unsupported runtime %q", request.Runtime)
+		return usecases.RunResult{}, fmt.Errorf("unsupported runtime %q", request.Runtime)
 	}
 	if err := r.ensureImage(ctx, config.Image); err != nil {
-		return RunResult{}, err
+		return usecases.RunResult{}, err
 	}
 
 	directory, err := os.MkdirTemp("", "runner-*")
 	if err != nil {
-		return RunResult{}, err
+		return usecases.RunResult{}, err
 	}
 	defer os.RemoveAll(directory)
 	if err := os.WriteFile(filepath.Join(directory, config.FileName), []byte(request.Code), 0o644); err != nil {
-		return RunResult{}, err
+		return usecases.RunResult{}, err
 	}
 
 	runCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
@@ -79,7 +81,7 @@ func (r *Runner) Run(ctx context.Context, request RunRequest) (RunResult, error)
 		},
 	})
 	if err != nil {
-		return RunResult{}, err
+		return usecases.RunResult{}, err
 	}
 	defer r.removeContainer(response.ID)
 
@@ -90,7 +92,7 @@ func (r *Runner) Run(ctx context.Context, request RunRequest) (RunResult, error)
 		Stderr: true,
 	})
 	if err != nil {
-		return RunResult{}, err
+		return usecases.RunResult{}, err
 	}
 	defer attached.Close()
 
@@ -101,31 +103,31 @@ func (r *Runner) Run(ctx context.Context, request RunRequest) (RunResult, error)
 		outputDone <- err
 	}()
 	if _, err := r.docker.ContainerStart(runCtx, response.ID, client.ContainerStartOptions{}); err != nil {
-		return RunResult{}, err
+		return usecases.RunResult{}, err
 	}
 	if _, err := attached.Conn.Write([]byte(request.Input)); err != nil {
-		return RunResult{}, err
+		return usecases.RunResult{}, err
 	}
 	if err := attached.CloseWrite(); err != nil {
-		return RunResult{}, err
+		return usecases.RunResult{}, err
 	}
 	wait := r.docker.ContainerWait(runCtx, response.ID, client.ContainerWaitOptions{Condition: containertypes.WaitConditionNotRunning})
 	var exitCode int
 	select {
 	case err := <-wait.Error:
 		if err != nil {
-			return RunResult{}, err
+			return usecases.RunResult{}, err
 		}
 	case status := <-wait.Result:
 		exitCode = int(status.StatusCode)
 	case <-runCtx.Done():
 		_, _ = r.docker.ContainerKill(context.Background(), response.ID, client.ContainerKillOptions{Signal: "SIGKILL"})
-		return RunResult{}, errors.New("execution timed out")
+		return usecases.RunResult{}, errors.New("execution timed out")
 	}
 	if err := <-outputDone; err != nil {
-		return RunResult{}, err
+		return usecases.RunResult{}, err
 	}
-	return RunResult{Stdout: stdout.String(), Stderr: stderr.String(), ExitCode: exitCode}, nil
+	return usecases.RunResult{Stdout: stdout.String(), Stderr: stderr.String(), ExitCode: exitCode}, nil
 }
 
 func (r *Runner) ensureImage(ctx context.Context, image string) error {

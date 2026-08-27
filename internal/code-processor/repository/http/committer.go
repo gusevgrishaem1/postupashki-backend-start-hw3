@@ -1,4 +1,4 @@
-package committer
+package httprepository
 
 import (
 	"bytes"
