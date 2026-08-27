@@ -1,6 +1,3 @@
-APP_NAME := task-service
-PORT ?= 8000
-
 .PHONY: run code-processor build test integration-test up down
 
 run:

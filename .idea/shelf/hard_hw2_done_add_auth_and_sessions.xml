@@ -1,8 +1,0 @@
-<changelist name="hard_hw2_done_add_auth_and_sessions" date="1787834681898" recycled="false">
-  <option name="PATH" value="$PROJECT_DIR$/.idea/shelf/hard_hw2_done_add_auth_and_sessions/shelved.patch" />
-  <option name="DESCRIPTION" value="hard hw2 done add auth and sessions" />
-  <binary>
-    <option name="AFTER_PATH" value="tests/static/sigma.png" />
-    <option name="SHELVED_PATH" value="$PROJECT_DIR$/.idea/shelf/hard_hw2_done_add_auth_and_sessions/sigma.png" />
-  </binary>
-</changelist>

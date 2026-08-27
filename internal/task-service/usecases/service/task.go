@@ -18,11 +18,8 @@ type Publisher interface {
 	Publish(contracts.Submission) error
 }
 
-func NewTask(repository repository.Task, publisher ...Publisher) *Task {
-	service := &Task{repository: repository}
-	if len(publisher) > 0 {
-		service.publisher = publisher[0]
-	}
+func NewTask(repository repository.Task, publisher Publisher) *Task {
+	service := &Task{repository: repository, publisher: publisher}
 	return service
 }
 
