@@ -3,10 +3,10 @@ package main
 import (
 	"log"
 	"net/http"
+	"postupashki-backend-start-hw3/internal/task-service/api/http"
 	"time"
 
 	"postupashki-backend-start-hw3/internal/task-service/config"
-	taskhttp "postupashki-backend-start-hw3/internal/task-service/http"
 	"postupashki-backend-start-hw3/internal/task-service/repository/inmemory"
 	"postupashki-backend-start-hw3/internal/task-service/repository/rabbitmq"
 	"postupashki-backend-start-hw3/internal/task-service/usecases/service"

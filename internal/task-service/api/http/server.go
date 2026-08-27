@@ -3,7 +3,7 @@ package taskhttp
 import (
 	"encoding/json"
 	"net/http"
-	"postupashki-backend-start-hw3/pkg/swagger"
+	"postupashki-backend-start-hw3/internal/task-service/api/http/swagger"
 	"strings"
 
 	"postupashki-backend-start-hw3/internal/task-service/usecases"
