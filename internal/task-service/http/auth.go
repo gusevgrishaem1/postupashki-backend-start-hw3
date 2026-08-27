@@ -9,72 +9,47 @@ import (
 	"postupashki-backend-start-hw3/internal/task-service/usecases"
 )
 
-type credentials struct {
-	Username string `json:"username"`
+type credentialsRequest struct {
+	Login    string `json:"login"`
 	Password string `json:"password"`
 }
 
-// register godoc
-// @Summary Register user
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Param credentials body credentials true "Credentials"
-// @Success 201
-// @Failure 400 {object} map[string]string
-// @Failure 409 {object} map[string]string
-// @Router /register [post]
 func (h *Server) register(w http.ResponseWriter, r *http.Request) {
-	credentials, ok := readCredentials(w, r)
+	credentials, ok := decodeCredentials(w, r)
 	if !ok {
 		return
 	}
-	if err := h.auth.Register(credentials.Username, credentials.Password); err != nil {
+	if err := h.auth.Register(credentials.Login, credentials.Password); err != nil {
 		if errors.Is(err, usecases.ErrUserExists) {
 			write(w, http.StatusConflict, map[string]string{"error": err.Error()})
 			return
 		}
-		write(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+		write(w, http.StatusInternalServerError, map[string]string{"error": "registration failed"})
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
 }
 
-// login godoc
-// @Summary Login user
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Param credentials body credentials true "Credentials"
-// @Success 200 {object} map[string]string
-// @Failure 400 {object} map[string]string
-// @Failure 401 {object} map[string]string
-// @Router /login [post]
 func (h *Server) login(w http.ResponseWriter, r *http.Request) {
-	credentials, ok := readCredentials(w, r)
+	credentials, ok := decodeCredentials(w, r)
 	if !ok {
 		return
 	}
-	token, err := h.auth.Login(credentials.Username, credentials.Password)
+	token, err := h.auth.Login(credentials.Login, credentials.Password)
 	if err != nil {
-		write(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+		write(w, http.StatusUnauthorized, map[string]string{"error": "invalid credentials"})
 		return
 	}
 	write(w, http.StatusOK, map[string]string{"token": token})
 }
 
-func readCredentials(w http.ResponseWriter, r *http.Request) (credentials, bool) {
-	var value credentials
+func decodeCredentials(w http.ResponseWriter, r *http.Request) (credentialsRequest, bool) {
+	var request credentialsRequest
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
-	if err := decoder.Decode(&value); err != nil {
+	if err := decoder.Decode(&request); err != nil || strings.TrimSpace(request.Login) == "" || request.Password == "" {
 		write(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
-		return credentials{}, false
+		return credentialsRequest{}, false
 	}
-	value.Username = strings.TrimSpace(value.Username)
-	if value.Username == "" || value.Password == "" {
-		write(w, http.StatusBadRequest, map[string]string{"error": "username and password are required"})
-		return credentials{}, false
-	}
-	return value, true
+	return request, true
 }

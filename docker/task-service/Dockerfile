@@ -1,7 +1,7 @@
 FROM golang:1.26-alpine AS builder
 
 WORKDIR /app
-COPY ../.. .
+COPY . .
 RUN go build -o /task-service ./cmd/task-service
 
 FROM alpine:3.22

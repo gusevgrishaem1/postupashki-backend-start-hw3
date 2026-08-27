@@ -5,7 +5,7 @@ import "postupashki-backend-start-hw3/internal/contracts"
 type Task struct {
 	ID     string
 	Status string
-	Result Result
+	Result contracts.Result
 }
 
 type Result = contracts.Result
