@@ -39,6 +39,7 @@ func main() {
 		runResult, err := codeRunner.Run(context.Background(), runner.RunRequest{
 			Runtime: submission.Language,
 			Code:    submission.Code,
+			Input:   submission.Input,
 		})
 		result := contracts.Result{
 			Stdout: runResult.Stdout, Stderr: runResult.Stderr, ExitCode: runResult.ExitCode,

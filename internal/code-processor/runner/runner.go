@@ -63,6 +63,9 @@ func (r *Runner) Run(ctx context.Context, request RunRequest) (RunResult, error)
 		Config: &containertypes.Config{
 			Image:        config.Image,
 			Cmd:          config.Command,
+			OpenStdin:    true,
+			StdinOnce:    true,
+			AttachStdin:  true,
 			AttachStdout: true,
 			AttachStderr: true,
 		},
@@ -82,6 +85,7 @@ func (r *Runner) Run(ctx context.Context, request RunRequest) (RunResult, error)
 
 	attached, err := r.docker.ContainerAttach(runCtx, response.ID, client.ContainerAttachOptions{
 		Stream: true,
+		Stdin:  true,
 		Stdout: true,
 		Stderr: true,
 	})
@@ -97,6 +101,12 @@ func (r *Runner) Run(ctx context.Context, request RunRequest) (RunResult, error)
 		outputDone <- err
 	}()
 	if _, err := r.docker.ContainerStart(runCtx, response.ID, client.ContainerStartOptions{}); err != nil {
+		return RunResult{}, err
+	}
+	if _, err := attached.Conn.Write([]byte(request.Input)); err != nil {
+		return RunResult{}, err
+	}
+	if err := attached.CloseWrite(); err != nil {
 		return RunResult{}, err
 	}
 	wait := r.docker.ContainerWait(runCtx, response.ID, client.ContainerWaitOptions{Condition: containertypes.WaitConditionNotRunning})

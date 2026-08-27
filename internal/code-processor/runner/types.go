@@ -3,6 +3,7 @@ package runner
 type RunRequest struct {
 	Runtime string
 	Code    string
+	Input   string
 }
 
 type RunResult struct {

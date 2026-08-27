@@ -11,6 +11,8 @@ import (
 type createTaskRequest struct {
 	Code     string `json:"code"`
 	Language string `json:"language"`
+	Runtime  string `json:"runtime"`
+	Input    string `json:"input"`
 }
 
 type commitRequest struct {
@@ -35,11 +37,14 @@ func (h *Server) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	lang := request.Language
+	if lang == "" {
+		lang = request.Runtime
+	}
 	if strings.TrimSpace(request.Code) == "" || lang == "" {
 		write(w, http.StatusBadRequest, map[string]string{"error": "code and runtime are required"})
 		return
 	}
-	taskID, err := h.task.Create(request.Code, lang)
+	taskID, err := h.task.Create(request.Code, lang, request.Input)
 	if err != nil {
 		write(w, http.StatusServiceUnavailable, map[string]string{"error": "task queue is unavailable"})
 		return

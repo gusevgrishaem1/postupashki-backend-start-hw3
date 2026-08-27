@@ -11,6 +11,7 @@ import (
 
 type credentialsRequest struct {
 	Login    string `json:"login"`
+	Username string `json:"username"`
 	Password string `json:"password"`
 }
 
@@ -47,7 +48,15 @@ func decodeCredentials(w http.ResponseWriter, r *http.Request) (credentialsReque
 	var request credentialsRequest
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
-	if err := decoder.Decode(&request); err != nil || strings.TrimSpace(request.Login) == "" || request.Password == "" {
+	if err := decoder.Decode(&request); err != nil {
+		write(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		return credentialsRequest{}, false
+	}
+	request.Login = strings.TrimSpace(request.Login)
+	if request.Login == "" {
+		request.Login = strings.TrimSpace(request.Username)
+	}
+	if request.Login == "" || request.Password == "" {
 		write(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
 		return credentialsRequest{}, false
 	}

@@ -23,10 +23,10 @@ func NewTask(repository repository.Task, publisher Publisher) *Task {
 	return service
 }
 
-func (s *Task) Create(code, language string) (string, error) {
+func (s *Task) Create(code, language, input string) (string, error) {
 	id := uuid.NewString()
 	s.repository.Save(domain.Task{ID: id, Status: domain.InProgress})
-	if err := s.publisher.Publish(contracts.Submission{ID: id, Code: code, Language: language}); err != nil {
+	if err := s.publisher.Publish(contracts.Submission{ID: id, Code: code, Language: language, Input: input}); err != nil {
 		return "", err
 	}
 	return id, nil

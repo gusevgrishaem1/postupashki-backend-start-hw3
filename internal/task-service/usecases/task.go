@@ -9,7 +9,7 @@ import (
 var ErrNotFound = errors.New("task not found")
 
 type Task interface {
-	Create(code, language string) (string, error)
+	Create(code, language, input string) (string, error)
 	Get(string) (domain.Task, error)
 	Commit(string, domain.Result) error
 }

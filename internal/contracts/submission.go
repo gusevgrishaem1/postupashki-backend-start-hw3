@@ -4,6 +4,7 @@ type Submission struct {
 	ID       string `json:"task_id"`
 	Code     string `json:"code"`
 	Language string `json:"language"`
+	Input    string `json:"input,omitempty"`
 }
 
 type Result struct {
