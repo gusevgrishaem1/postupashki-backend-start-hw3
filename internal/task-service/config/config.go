@@ -8,3 +8,7 @@ func Address() string {
 	}
 	return ":8000"
 }
+
+func RabbitMQURL() string {
+	return os.Getenv("RABBITMQ_URL")
+}

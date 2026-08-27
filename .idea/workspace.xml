@@ -4,15 +4,9 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="25e82d45-9a35-4772-85e9-6b6979ff520a" name="Changes" comment="hard hw3 done">
-      <change afterPath="$PROJECT_DIR$/.idea/shelf/hard_hw2_done_add_auth_and_sessions/shelved.patch" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/cmd/task-service/main.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docker/task-service/Dockerfile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/code-processor/main.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker/code-processor/Dockerfile" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/swagger/swagger/swagger/swagger.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/swagger/swagger.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/swagger/swagger/swagger/swagger.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/swagger/swagger.yaml" afterDir="false" />
+    <list default="true" id="25e82d45-9a35-4772-85e9-6b6979ff520a" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/internal/task-service/config/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/task-service/config/config.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/task-service/config/rabbitmq.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/task-service/config/rabbitmq.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
