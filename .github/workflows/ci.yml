@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.x"
+          cache: true
+      - run: go test ./...
+      - run: docker compose up --build -d --wait --wait-timeout 60
+      - run: pip install pytest requests
+      - run: pytest -q tests/tests.py
+      - if: always()
+        run: docker compose logs
+      - if: always()
+        run: docker compose down --remove-orphans

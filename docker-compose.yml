@@ -1,0 +1,41 @@
+services:
+  rabbitmq:
+    image: rabbitmq:4.1-alpine
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  task-service:
+    build:
+      context: .
+      dockerfile: docker/task-service/Dockerfile
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:8000/swagger.yaml"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  code-processor:
+    build:
+      context: .
+      dockerfile: docker/code-processor/Dockerfile
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      TASK_SERVICE_URL: http://task-service:8000
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp:/tmp
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      task-service:
+        condition: service_healthy

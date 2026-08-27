@@ -1,23 +1,27 @@
 APP_NAME := task-service
 PORT ?= 8000
 
-.PHONY: run build test docker-build docker-run docker-stop
+.PHONY: run code-processor build test integration-test up down
 
 run:
-	go run ./cmd/api
+	go run ./cmd/task-service
+
+code-processor:
+	go run ./cmd/code-processor
 
 build:
 	mkdir -p bin
-	go build -o bin/api ./cmd/api
+	go build -o bin/task-service ./cmd/task-service
+	go build -o bin/code-processor ./cmd/code-processor
 
 test:
 	go test ./...
 
-docker-build:
-	docker build -t $(APP_NAME) .
+integration-test: up
+	pytest -q tests/tests.py
 
-docker-run: docker-build
-	docker run --rm --name $(APP_NAME) -p $(PORT):8000 $(APP_NAME)
+up:
+	docker compose up --build -d --wait --wait-timeout 60
 
-docker-stop:
-	docker stop $(APP_NAME)
+down:
+	docker compose down --remove-orphans
