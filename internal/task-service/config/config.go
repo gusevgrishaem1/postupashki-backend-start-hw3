@@ -12,3 +12,11 @@ func Address() string {
 func RabbitMQURL() string {
 	return os.Getenv("RABBITMQ_URL")
 }
+
+func PostgreSQLURL() string {
+	return os.Getenv("POSTGRES_URL")
+}
+
+func RedisURL() string {
+	return os.Getenv("REDIS_URL")
+}

@@ -15,10 +15,11 @@ func NewSession() *Session {
 	return &Session{sessions: make(map[string]domain.Session)}
 }
 
-func (r *Session) Save(session domain.Session) {
+func (r *Session) Save(session domain.Session) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.sessions[session.SessionID] = session
+	return nil
 }
 
 func (r *Session) Get(id string) (domain.Session, bool) {

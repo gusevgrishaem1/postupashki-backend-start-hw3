@@ -36,7 +36,9 @@ func (s *Auth) Login(login, password string) (string, error) {
 	}
 
 	token := uuid.NewString()
-	s.sessions.Save(domain.Session{UserID: user.ID, SessionID: token})
+	if err := s.sessions.Save(domain.Session{UserID: user.ID, SessionID: token}); err != nil {
+		return "", err
+	}
 	return token, nil
 }
 

@@ -1,4 +1,4 @@
-.PHONY: run code-processor build test integration-test up down
+.PHONY: run code-processor build test integration-test up down destroy
 
 run:
 	go run ./cmd/task-service
@@ -22,3 +22,6 @@ up:
 
 down:
 	docker compose down --remove-orphans
+
+destroy:
+	docker compose down --volumes --remove-orphans

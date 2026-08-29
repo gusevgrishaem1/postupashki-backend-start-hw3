@@ -8,4 +8,5 @@ FROM alpine:3.22
 
 WORKDIR /app
 COPY --from=builder /code-processor .
+EXPOSE 9000
 CMD ["./code-processor"]
