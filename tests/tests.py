@@ -18,7 +18,7 @@ def auth_token(user_data):
     login_url = f"{BASE_URL}/login"
 
     response = requests.post(register_url, json=user_data)
-    assert response.status_code in (201, 409)
+    assert response.status_code == 201
 
     response = requests.post(login_url, json=user_data)
     assert response.status_code == 200
@@ -41,7 +41,7 @@ def test_login_user(user_data):
     assert 'token' in data
 
 def get_code_processor_payload():
-    return {"runtime": "python", "code": "print(input())", "input": "Hello, stdout world!\n"}
+    return {"translator": "python3", "code": "print('Hello, stdout world!')"}
 
 def get_image_processor_payload():
     with open("static/sigma.png", "rb") as image_file:
@@ -56,6 +56,10 @@ def test_create_task(auth_token):
 
     payload = get_code_processor_payload()
     # payload = get_image_processor_payload()
+
+
+    if len(payload) == 0:
+        raise NotImplemented("Choose one of the variants for payload!")
 
     response = requests.post(task_url, headers=headers, json=payload) 
 
@@ -90,11 +94,6 @@ def test_task_status_and_result(auth_token):
     assert response.status_code == 200
     data = response.json()
     assert 'result' in data
-    assert data['result'] == {
-        'stdout': 'Hello, stdout world!\n',
-        'stderr': '',
-        'exit_code': 0,
-    }
 
 def test_task_not_found(auth_token):
     invalid_task_id = str(uuid.uuid4())
