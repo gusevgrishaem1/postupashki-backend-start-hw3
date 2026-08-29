@@ -11,10 +11,11 @@ import (
 )
 
 type createTaskRequest struct {
-	Code     string `json:"code"`
-	Language string `json:"language"`
-	Runtime  string `json:"runtime"`
-	Input    string `json:"input"`
+	Code       string `json:"code"`
+	Language   string `json:"language"`
+	Runtime    string `json:"runtime"`
+	Translator string `json:"translator"`
+	Input      string `json:"input"`
 }
 
 type commitRequest struct {
@@ -41,6 +42,12 @@ func (h *Server) create(w http.ResponseWriter, r *http.Request) {
 	lang := request.Language
 	if lang == "" {
 		lang = request.Runtime
+	}
+	if lang == "" {
+		lang = request.Translator
+	}
+	if lang == "python3" {
+		lang = "python"
 	}
 	if strings.TrimSpace(request.Code) == "" || lang == "" {
 		write(w, http.StatusBadRequest, map[string]string{"error": "code and runtime are required"})

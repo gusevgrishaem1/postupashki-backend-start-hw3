@@ -24,8 +24,17 @@ func NewAuth(users repository.User, sessions repository.Session) *Auth {
 }
 
 func (s *Auth) Register(login, password string) error {
-	user := domain.User{ID: uuid.NewString(), Login: login, Password: passwordHash(password)}
+	hashedPassword := passwordHash(password)
+	user := domain.User{ID: uuid.NewString(), Login: login, Password: hashedPassword}
 	if err := s.users.Save(user); errors.Is(err, repository.ErrAlreadyExists) {
+		existingUser, getErr := s.users.GetByLogin(login)
+		if getErr != nil {
+			log.Printf("register: get existing user: %v", getErr)
+			return usecases.ErrServiceUnavailable
+		}
+		if subtle.ConstantTimeCompare([]byte(existingUser.Password), []byte(hashedPassword)) == 1 {
+			return nil
+		}
 		return usecases.ErrUserExists
 	} else if err != nil {
 		log.Printf("register: save user: %v", err)
