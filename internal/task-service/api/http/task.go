@@ -2,10 +2,12 @@ package taskhttp
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 
 	"postupashki-backend-start-hw3/internal/task-service/domain"
+	"postupashki-backend-start-hw3/internal/task-service/usecases"
 )
 
 type createTaskRequest struct {
@@ -46,7 +48,7 @@ func (h *Server) create(w http.ResponseWriter, r *http.Request) {
 	}
 	taskID, err := h.task.Create(request.Code, lang, request.Input)
 	if err != nil {
-		write(w, http.StatusServiceUnavailable, map[string]string{"error": "task queue is unavailable"})
+		write(w, http.StatusServiceUnavailable, map[string]string{"error": usecases.ErrServiceUnavailable.Error()})
 		return
 	}
 	write(w, http.StatusCreated, map[string]string{"task_id": taskID})
@@ -61,7 +63,11 @@ func (h *Server) commit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.task.Commit(request.TaskID, domain.Result{Stdout: request.Stdout, Stderr: request.Stderr, ExitCode: request.ExitCode}); err != nil {
-		write(w, http.StatusNotFound, map[string]string{"error": err.Error()})
+		if errors.Is(err, usecases.ErrNotFound) {
+			write(w, http.StatusNotFound, map[string]string{"error": err.Error()})
+			return
+		}
+		write(w, http.StatusServiceUnavailable, map[string]string{"error": usecases.ErrServiceUnavailable.Error()})
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -78,7 +84,7 @@ func (h *Server) commit(w http.ResponseWriter, r *http.Request) {
 func (h *Server) status(w http.ResponseWriter, r *http.Request) {
 	task, err := h.task.Get(r.PathValue("task_id"))
 	if err != nil {
-		write(w, http.StatusNotFound, map[string]string{"error": err.Error()})
+		writeTaskReadError(w, err)
 		return
 	}
 	write(w, http.StatusOK, map[string]string{"status": task.Status})
@@ -96,7 +102,7 @@ func (h *Server) status(w http.ResponseWriter, r *http.Request) {
 func (h *Server) result(w http.ResponseWriter, r *http.Request) {
 	task, err := h.task.Get(r.PathValue("task_id"))
 	if err != nil {
-		write(w, http.StatusNotFound, map[string]string{"error": err.Error()})
+		writeTaskReadError(w, err)
 		return
 	}
 	if task.Status != domain.Ready {
@@ -104,4 +110,12 @@ func (h *Server) result(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	write(w, http.StatusOK, map[string]domain.Result{"result": task.Result})
+}
+
+func writeTaskReadError(w http.ResponseWriter, err error) {
+	if errors.Is(err, usecases.ErrNotFound) {
+		write(w, http.StatusNotFound, map[string]string{"error": err.Error()})
+		return
+	}
+	write(w, http.StatusServiceUnavailable, map[string]string{"error": usecases.ErrServiceUnavailable.Error()})
 }

@@ -4,6 +4,8 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
+	"errors"
+	"log"
 
 	"github.com/google/uuid"
 
@@ -23,28 +25,44 @@ func NewAuth(users repository.User, sessions repository.Session) *Auth {
 
 func (s *Auth) Register(login, password string) error {
 	user := domain.User{ID: uuid.NewString(), Login: login, Password: passwordHash(password)}
-	if !s.users.Save(user) {
+	if err := s.users.Save(user); errors.Is(err, repository.ErrAlreadyExists) {
 		return usecases.ErrUserExists
+	} else if err != nil {
+		log.Printf("register: save user: %v", err)
+		return usecases.ErrServiceUnavailable
 	}
 	return nil
 }
 
 func (s *Auth) Login(login, password string) (string, error) {
-	user, ok := s.users.GetByLogin(login)
-	if !ok || subtle.ConstantTimeCompare([]byte(user.Password), []byte(passwordHash(password))) != 1 {
+	user, err := s.users.GetByLogin(login)
+	if errors.Is(err, repository.ErrNotFound) {
+		return "", usecases.ErrInvalidCredentials
+	}
+	if err != nil {
+		log.Printf("login: get user: %v", err)
+		return "", usecases.ErrServiceUnavailable
+	}
+	if subtle.ConstantTimeCompare([]byte(user.Password), []byte(passwordHash(password))) != 1 {
 		return "", usecases.ErrInvalidCredentials
 	}
 
 	token := uuid.NewString()
 	if err := s.sessions.Save(domain.Session{UserID: user.ID, SessionID: token}); err != nil {
-		return "", err
+		log.Printf("login: save session: %v", err)
+		return "", usecases.ErrServiceUnavailable
 	}
 	return token, nil
 }
 
 func (s *Auth) Authenticate(token string) error {
-	if _, ok := s.sessions.Get(token); !ok {
+	_, err := s.sessions.Get(token)
+	if errors.Is(err, repository.ErrNotFound) {
 		return usecases.ErrInvalidSession
+	}
+	if err != nil {
+		log.Printf("authenticate: get session: %v", err)
+		return usecases.ErrServiceUnavailable
 	}
 	return nil
 }

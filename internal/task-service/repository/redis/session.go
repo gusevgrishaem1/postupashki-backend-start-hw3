@@ -2,11 +2,12 @@ package redis
 
 import (
 	"context"
-	"log"
+	"errors"
 
 	redisclient "github.com/redis/go-redis/v9"
 
 	"postupashki-backend-start-hw3/internal/task-service/domain"
+	"postupashki-backend-start-hw3/internal/task-service/repository"
 )
 
 const sessionPrefix = "session:"
@@ -36,11 +37,13 @@ func (r *Session) Save(session domain.Session) error {
 	return r.client.Set(context.Background(), sessionPrefix+session.SessionID, session.UserID, 0).Err()
 }
 
-func (r *Session) Get(id string) (domain.Session, bool) {
+func (r *Session) Get(id string) (domain.Session, error) {
 	userID, err := r.client.Get(context.Background(), sessionPrefix+id).Result()
-	if err != nil {
-		log.Printf("get session: %v", err)
-		return domain.Session{}, false
+	if errors.Is(err, redisclient.Nil) {
+		return domain.Session{}, repository.ErrNotFound
 	}
-	return domain.Session{UserID: userID, SessionID: id}, true
+	if err != nil {
+		return domain.Session{}, err
+	}
+	return domain.Session{UserID: userID, SessionID: id}, nil
 }

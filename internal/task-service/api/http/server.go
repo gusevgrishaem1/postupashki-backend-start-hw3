@@ -2,6 +2,7 @@ package taskhttp
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"postupashki-backend-start-hw3/internal/task-service/api/http/swagger"
 	"strings"
@@ -36,8 +37,16 @@ func (h *Server) requireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		const prefix = "Bearer "
 		header := r.Header.Get("Authorization")
-		if !strings.HasPrefix(header, prefix) || len(header) == len(prefix) || h.auth.Authenticate(header[len(prefix):]) != nil {
+		if !strings.HasPrefix(header, prefix) || len(header) == len(prefix) {
 			write(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+			return
+		}
+		if err := h.auth.Authenticate(header[len(prefix):]); err != nil {
+			if errors.Is(err, usecases.ErrInvalidSession) {
+				write(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+				return
+			}
+			write(w, http.StatusServiceUnavailable, map[string]string{"error": usecases.ErrServiceUnavailable.Error()})
 			return
 		}
 		next.ServeHTTP(w, r)

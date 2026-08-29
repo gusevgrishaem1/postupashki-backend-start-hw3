@@ -25,7 +25,7 @@ func (h *Server) register(w http.ResponseWriter, r *http.Request) {
 			write(w, http.StatusConflict, map[string]string{"error": err.Error()})
 			return
 		}
-		write(w, http.StatusInternalServerError, map[string]string{"error": "registration failed"})
+		write(w, http.StatusServiceUnavailable, map[string]string{"error": usecases.ErrServiceUnavailable.Error()})
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
@@ -38,7 +38,11 @@ func (h *Server) login(w http.ResponseWriter, r *http.Request) {
 	}
 	token, err := h.auth.Login(credentials.Login, credentials.Password)
 	if err != nil {
-		write(w, http.StatusUnauthorized, map[string]string{"error": "invalid credentials"})
+		if errors.Is(err, usecases.ErrInvalidCredentials) {
+			write(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
+		write(w, http.StatusServiceUnavailable, map[string]string{"error": usecases.ErrServiceUnavailable.Error()})
 		return
 	}
 	write(w, http.StatusOK, map[string]string{"token": token})

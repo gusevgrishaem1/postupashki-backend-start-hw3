@@ -3,9 +3,9 @@ package postgres
 import (
 	"database/sql"
 	"errors"
-	"log"
 
 	"postupashki-backend-start-hw3/internal/task-service/domain"
+	"postupashki-backend-start-hw3/internal/task-service/repository"
 )
 
 type Task struct {
@@ -16,7 +16,7 @@ func NewTask(database *sql.DB) *Task {
 	return &Task{database: database}
 }
 
-func (r *Task) Save(task domain.Task) {
+func (r *Task) Save(task domain.Task) error {
 	_, err := r.database.Exec(`
 		INSERT INTO tasks (id, status, stdout, stderr, exit_code)
 		VALUES ($1, $2, $3, $4, $5)
@@ -26,22 +26,19 @@ func (r *Task) Save(task domain.Task) {
 			stderr = EXCLUDED.stderr,
 			exit_code = EXCLUDED.exit_code`,
 		task.ID, task.Status, task.Result.Stdout, task.Result.Stderr, task.Result.ExitCode)
-	if err != nil {
-		log.Printf("save task: %v", err)
-	}
+	return err
 }
 
-func (r *Task) Get(id string) (domain.Task, bool) {
+func (r *Task) Get(id string) (domain.Task, error) {
 	var task domain.Task
 	err := r.database.QueryRow(`SELECT id, status, stdout, stderr, exit_code FROM tasks WHERE id = $1`, id).Scan(
 		&task.ID, &task.Status, &task.Result.Stdout, &task.Result.Stderr, &task.Result.ExitCode,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
-		return domain.Task{}, false
+		return domain.Task{}, repository.ErrNotFound
 	}
 	if err != nil {
-		log.Printf("get task: %v", err)
-		return domain.Task{}, false
+		return domain.Task{}, err
 	}
-	return task, true
+	return task, nil
 }

@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"postupashki-backend-start-hw3/internal/task-service/domain"
+	"postupashki-backend-start-hw3/internal/task-service/repository"
 )
 
 type Session struct {
@@ -22,9 +23,12 @@ func (r *Session) Save(session domain.Session) error {
 	return nil
 }
 
-func (r *Session) Get(id string) (domain.Session, bool) {
+func (r *Session) Get(id string) (domain.Session, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	session, ok := r.sessions[id]
-	return session, ok
+	if !ok {
+		return domain.Session{}, repository.ErrNotFound
+	}
+	return session, nil
 }
