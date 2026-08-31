@@ -12,4 +12,5 @@ type Auth interface {
 	Register(login, password string) error
 	Login(login, password string) (string, error)
 	Authenticate(token string) error
+	Logout(token string) error
 }

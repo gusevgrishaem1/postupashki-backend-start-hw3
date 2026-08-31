@@ -1,11 +1,12 @@
 package service
 
 import (
-	"crypto/sha256"
-	"crypto/subtle"
-	"encoding/hex"
+	"context"
+	"fmt"
+	"time"
 
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 
 	"postupashki-backend-start-hw3/internal/task-service/domain"
 	"postupashki-backend-start-hw3/internal/task-service/repository"
@@ -13,16 +14,35 @@ import (
 )
 
 type Auth struct {
-	users    repository.User
-	sessions repository.Session
+	users      repository.User
+	sessions   repository.Session
+	sessionTTL time.Duration
+	cancel     context.CancelFunc
 }
 
-func NewAuth(users repository.User, sessions repository.Session) *Auth {
-	return &Auth{users: users, sessions: sessions}
+const defaultSessionTTL = 24 * time.Hour
+
+func NewAuth(users repository.User, sessions repository.Session, sessionTTL time.Duration) *Auth {
+	if sessionTTL <= 0 {
+		sessionTTL = defaultSessionTTL
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	auth := &Auth{users: users, sessions: sessions, sessionTTL: sessionTTL, cancel: cancel}
+	go newSessionCleanup(sessions, sessionCleanupInterval).run(ctx)
+
+	return auth
+}
+
+func (s *Auth) Close() {
+	s.cancel()
 }
 
 func (s *Auth) Register(login, password string) error {
-	user := domain.User{ID: uuid.NewString(), Login: login, Password: passwordHash(password)}
+	hash, err := passwordHash(password)
+	if err != nil {
+		return err
+	}
+	user := domain.User{ID: uuid.NewString(), Login: login, Password: hash}
 	if !s.users.Save(user) {
 		return usecases.ErrUserExists
 	}
@@ -31,12 +51,16 @@ func (s *Auth) Register(login, password string) error {
 
 func (s *Auth) Login(login, password string) (string, error) {
 	user, ok := s.users.GetByLogin(login)
-	if !ok || subtle.ConstantTimeCompare([]byte(user.Password), []byte(passwordHash(password))) != 1 {
+	if !ok || bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)) != nil {
 		return "", usecases.ErrInvalidCredentials
 	}
 
 	token := uuid.NewString()
-	s.sessions.Save(domain.Session{UserID: user.ID, SessionID: token})
+	s.sessions.Save(domain.Session{
+		UserID:    user.ID,
+		SessionID: token,
+		ExpiresAt: time.Now().Add(s.sessionTTL),
+	})
 	return token, nil
 }
 
@@ -47,7 +71,18 @@ func (s *Auth) Authenticate(token string) error {
 	return nil
 }
 
-func passwordHash(password string) string {
-	sum := sha256.Sum256([]byte(password))
-	return hex.EncodeToString(sum[:])
+func (s *Auth) Logout(token string) error {
+	if !s.sessions.Delete(token) {
+		return usecases.ErrInvalidSession
+	}
+	return nil
+}
+
+func passwordHash(password string) (string, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	return string(hash), nil
 }

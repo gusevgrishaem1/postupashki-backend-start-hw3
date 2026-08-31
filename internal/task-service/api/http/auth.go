@@ -44,7 +44,19 @@ func (h *Server) login(w http.ResponseWriter, r *http.Request) {
 	write(w, http.StatusOK, map[string]string{"token": token})
 }
 
+func (h *Server) logout(w http.ResponseWriter, r *http.Request) {
+	token, ok := bearerToken(r)
+	if !ok || h.auth.Logout(token) != nil {
+		write(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func decodeCredentials(w http.ResponseWriter, r *http.Request) (credentialsRequest, bool) {
+	const maxBodySize = 4 << 10
+	r.Body = http.MaxBytesReader(w, r.Body, maxBodySize)
+
 	var request credentialsRequest
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
@@ -53,6 +65,7 @@ func decodeCredentials(w http.ResponseWriter, r *http.Request) (credentialsReque
 		return credentialsRequest{}, false
 	}
 	request.Login = strings.TrimSpace(request.Login)
+	request.Password = strings.TrimSpace(request.Password)
 	if request.Login == "" {
 		request.Login = strings.TrimSpace(request.Username)
 	}

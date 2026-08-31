@@ -2,6 +2,7 @@ package inmemory
 
 import (
 	"sync"
+	"time"
 
 	"postupashki-backend-start-hw3/internal/task-service/domain"
 )
@@ -22,8 +23,38 @@ func (r *Session) Save(session domain.Session) {
 }
 
 func (r *Session) Get(id string) (domain.Session, bool) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	session, ok := r.sessions[id]
+	if ok && !session.ExpiresAt.IsZero() && !time.Now().Before(session.ExpiresAt) {
+		delete(r.sessions, id)
+		return domain.Session{}, false
+	}
 	return session, ok
+}
+
+func (r *Session) Delete(id string) bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if _, ok := r.sessions[id]; !ok {
+		return false
+	}
+	delete(r.sessions, id)
+	return true
+}
+
+func (r *Session) RemoveExpired(now time.Time) int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	removed := 0
+	for id, session := range r.sessions {
+		if !session.ExpiresAt.IsZero() && !now.Before(session.ExpiresAt) {
+			delete(r.sessions, id)
+			removed++
+		}
+	}
+
+	return removed
 }

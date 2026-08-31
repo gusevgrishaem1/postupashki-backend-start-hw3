@@ -1,8 +1,14 @@
 package repository
 
-import "postupashki-backend-start-hw3/internal/task-service/domain"
+import (
+	"time"
+
+	"postupashki-backend-start-hw3/internal/task-service/domain"
+)
 
 type Session interface {
 	Save(domain.Session)
 	Get(string) (domain.Session, bool)
+	Delete(string) bool
+	RemoveExpired(time.Time) int
 }

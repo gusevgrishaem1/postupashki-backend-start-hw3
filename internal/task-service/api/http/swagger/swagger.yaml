@@ -53,6 +53,17 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+  /logout:
+    post:
+      summary: Logout user
+      tags: [auth]
+      security:
+        - bearerAuth: []
+      responses:
+        "204":
+          description: Session terminated
+        "401":
+          $ref: "#/components/responses/Unauthorized"
   /task:
     post:
       summary: Create task
