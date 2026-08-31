@@ -16,6 +16,11 @@ import (
 // @host localhost:8000
 // @BasePath /
 func main() {
+	addr, err := config.Address()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	taskRepository := inmemory.NewTask()
 	userRepository := inmemory.NewUser()
 	sessionRepository := inmemory.NewSession()
@@ -23,5 +28,5 @@ func main() {
 	authService := service.NewAuth(userRepository, sessionRepository)
 	server := httpapi.NewServer(taskService, authService)
 
-	log.Fatal(http.ListenAndServe(config.Address(), server.Handler()))
+	log.Fatal(http.ListenAndServe(addr, server.Handler()))
 }
