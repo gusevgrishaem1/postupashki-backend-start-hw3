@@ -39,6 +39,7 @@ services:
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
       POSTGRES_URL: postgres://task_service:task_service@postgres:5432/task_service?sslmode=disable
       REDIS_URL: redis://redis:6379/0
+      PORT: 8000
     ports:
       - "8000:8000"
     healthcheck:
