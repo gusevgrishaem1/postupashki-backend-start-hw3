@@ -15,6 +15,17 @@ type credentialsRequest struct {
 	Password string `json:"password"`
 }
 
+// register godoc
+// @Summary Register user
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param credentials body credentialsRequest true "User credentials"
+// @Success 201
+// @Failure 400 {object} map[string]string
+// @Failure 409 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /register [post]
 func (h *Server) register(w http.ResponseWriter, r *http.Request) {
 	credentials, ok := decodeCredentials(w, r)
 	if !ok {
@@ -31,6 +42,16 @@ func (h *Server) register(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
+// login godoc
+// @Summary Login user
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param credentials body credentialsRequest true "User credentials"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Router /login [post]
 func (h *Server) login(w http.ResponseWriter, r *http.Request) {
 	credentials, ok := decodeCredentials(w, r)
 	if !ok {
@@ -44,6 +65,14 @@ func (h *Server) login(w http.ResponseWriter, r *http.Request) {
 	write(w, http.StatusOK, map[string]string{"token": token})
 }
 
+// logout godoc
+// @Summary Logout user
+// @Tags auth
+// @Produce json
+// @Security bearerAuth
+// @Success 204
+// @Failure 401 {object} map[string]string
+// @Router /logout [post]
 func (h *Server) logout(w http.ResponseWriter, r *http.Request) {
 	token, ok := bearerToken(r)
 	if !ok || h.auth.Logout(token) != nil {
