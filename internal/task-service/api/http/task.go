@@ -53,7 +53,7 @@ func (h *Server) create(w http.ResponseWriter, r *http.Request) {
 		write(w, http.StatusBadRequest, map[string]string{"error": "code and runtime are required"})
 		return
 	}
-	taskID, err := h.task.Create(request.Code, lang, request.Input)
+	taskID, err := h.task.Create(r.Context(), request.Code, lang, request.Input)
 	if err != nil {
 		write(w, http.StatusServiceUnavailable, map[string]string{"error": usecases.ErrServiceUnavailable.Error()})
 		return
@@ -69,7 +69,7 @@ func (h *Server) commit(w http.ResponseWriter, r *http.Request) {
 		write(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
 		return
 	}
-	if err := h.task.Commit(request.TaskID, domain.Result{Stdout: request.Stdout, Stderr: request.Stderr, ExitCode: request.ExitCode}); err != nil {
+	if err := h.task.Commit(r.Context(), request.TaskID, domain.Result{Stdout: request.Stdout, Stderr: request.Stderr, ExitCode: request.ExitCode}); err != nil {
 		if errors.Is(err, usecases.ErrNotFound) {
 			write(w, http.StatusNotFound, map[string]string{"error": err.Error()})
 			return
@@ -89,7 +89,7 @@ func (h *Server) commit(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} map[string]string
 // @Router /status/{task_id} [get]
 func (h *Server) status(w http.ResponseWriter, r *http.Request) {
-	task, err := h.task.Get(r.PathValue("task_id"))
+	task, err := h.task.Get(r.Context(), r.PathValue("task_id"))
 	if err != nil {
 		writeTaskReadError(w, err)
 		return
@@ -107,7 +107,7 @@ func (h *Server) status(w http.ResponseWriter, r *http.Request) {
 // @Failure 409 {object} map[string]string
 // @Router /result/{task_id} [get]
 func (h *Server) result(w http.ResponseWriter, r *http.Request) {
-	task, err := h.task.Get(r.PathValue("task_id"))
+	task, err := h.task.Get(r.Context(), r.PathValue("task_id"))
 	if err != nil {
 		writeTaskReadError(w, err)
 		return

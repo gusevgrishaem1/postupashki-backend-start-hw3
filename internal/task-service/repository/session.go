@@ -1,8 +1,13 @@
 package repository
 
-import "postupashki-backend-start-hw3/internal/task-service/domain"
+import (
+	"context"
+
+	"postupashki-backend-start-hw3/internal/task-service/domain"
+)
 
 type Session interface {
-	Save(domain.Session) error
-	Get(string) (domain.Session, error)
+	Save(context.Context, domain.Session) error
+	Get(context.Context, string) (domain.Session, error)
+	Delete(context.Context, string) error
 }

@@ -1,11 +1,13 @@
 package taskhttp
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"postupashki-backend-start-hw3/internal/task-service/api/http/swagger"
 	"strings"
+	"time"
 
 	"postupashki-backend-start-hw3/internal/task-service/usecases"
 )
@@ -30,7 +32,15 @@ func (h *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /swagger.yaml", swagger.SpecificationHandler)
 	mux.HandleFunc("GET /swagger", redirectToSwaggerUI)
 	mux.HandleFunc("GET /swagger/", swagger.UIHandler)
-	return mux
+	return requestTimeout(mux, 5*time.Second)
+}
+
+func requestTimeout(next http.Handler, timeout time.Duration) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx, cancel := context.WithTimeout(r.Context(), timeout)
+		defer cancel()
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }
 
 func (h *Server) requireAuth(next http.Handler) http.Handler {
@@ -41,7 +51,7 @@ func (h *Server) requireAuth(next http.Handler) http.Handler {
 			write(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
 			return
 		}
-		if err := h.auth.Authenticate(header[len(prefix):]); err != nil {
+		if err := h.auth.Authenticate(r.Context(), header[len(prefix):]); err != nil {
 			if errors.Is(err, usecases.ErrInvalidSession) {
 				write(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
 				return
@@ -51,6 +61,15 @@ func (h *Server) requireAuth(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+func bearerToken(r *http.Request) (string, bool) {
+	const prefix = "Bearer "
+	header := r.Header.Get("Authorization")
+	if !strings.HasPrefix(header, prefix) || len(header) == len(prefix) {
+		return "", false
+	}
+	return header[len(prefix):], true
 }
 
 func redirectToSwaggerUI(w http.ResponseWriter, r *http.Request) {

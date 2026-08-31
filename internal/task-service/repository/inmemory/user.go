@@ -1,6 +1,7 @@
 package inmemory
 
 import (
+	"context"
 	"sync"
 
 	"postupashki-backend-start-hw3/internal/task-service/domain"
@@ -16,7 +17,7 @@ func NewUser() *User {
 	return &User{users: make(map[string]domain.User)}
 }
 
-func (r *User) Save(user domain.User) error {
+func (r *User) Save(_ context.Context, user domain.User) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if _, exists := r.users[user.Login]; exists {
@@ -26,7 +27,7 @@ func (r *User) Save(user domain.User) error {
 	return nil
 }
 
-func (r *User) GetByLogin(login string) (domain.User, error) {
+func (r *User) GetByLogin(_ context.Context, login string) (domain.User, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	user, ok := r.users[login]

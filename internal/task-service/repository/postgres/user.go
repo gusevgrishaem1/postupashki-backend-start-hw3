@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 
@@ -18,8 +19,8 @@ func NewUser(database *sql.DB) *User {
 	return &User{database: database}
 }
 
-func (r *User) Save(user domain.User) error {
-	_, err := r.database.Exec(`INSERT INTO users (id, login, password) VALUES ($1, $2, $3)`, user.ID, user.Login, user.Password)
+func (r *User) Save(ctx context.Context, user domain.User) error {
+	_, err := r.database.ExecContext(ctx, `INSERT INTO users (id, login, password) VALUES ($1, $2, $3)`, user.ID, user.Login, user.Password)
 	var postgresError *pgconn.PgError
 	if errors.As(err, &postgresError) && postgresError.Code == "23505" {
 		return repository.ErrAlreadyExists
@@ -27,9 +28,9 @@ func (r *User) Save(user domain.User) error {
 	return err
 }
 
-func (r *User) GetByLogin(login string) (domain.User, error) {
+func (r *User) GetByLogin(ctx context.Context, login string) (domain.User, error) {
 	var user domain.User
-	err := r.database.QueryRow(`SELECT id, login, password FROM users WHERE login = $1`, login).Scan(&user.ID, &user.Login, &user.Password)
+	err := r.database.QueryRowContext(ctx, `SELECT id, login, password FROM users WHERE login = $1`, login).Scan(&user.ID, &user.Login, &user.Password)
 	if errors.Is(err, sql.ErrNoRows) {
 		return domain.User{}, repository.ErrNotFound
 	}

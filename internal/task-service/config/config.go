@@ -1,12 +1,23 @@
 package config
 
-import "os"
+import (
+	"fmt"
+	"os"
+	"strconv"
+)
 
-func Address() string {
-	if port := os.Getenv("PORT"); port != "" {
-		return ":" + port
+func Address() (string, error) {
+	portStr := os.Getenv("PORT")
+	if portStr == "" {
+		portStr = "8080"
 	}
-	return ":8000"
+
+	port, err := strconv.Atoi(portStr)
+	if err != nil || port < 0 || port > 65_535 {
+		return "", fmt.Errorf("port must be an integer between 0 and 65535")
+	}
+
+	return fmt.Sprintf(":%d", port), nil
 }
 
 func RabbitMQURL() string {

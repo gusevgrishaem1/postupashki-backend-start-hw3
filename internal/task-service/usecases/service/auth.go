@@ -1,13 +1,13 @@
 package service
 
 import (
-	"crypto/sha256"
-	"crypto/subtle"
-	"encoding/hex"
+	"context"
 	"errors"
 	"log"
+	"time"
 
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 
 	"postupashki-backend-start-hw3/internal/task-service/domain"
 	"postupashki-backend-start-hw3/internal/task-service/repository"
@@ -15,24 +15,34 @@ import (
 )
 
 type Auth struct {
-	users    repository.User
-	sessions repository.Session
+	users      repository.User
+	sessions   repository.Session
+	sessionTTL time.Duration
 }
 
-func NewAuth(users repository.User, sessions repository.Session) *Auth {
-	return &Auth{users: users, sessions: sessions}
+const defaultSessionTTL = 24 * time.Hour
+
+func NewAuth(users repository.User, sessions repository.Session, sessionTTL time.Duration) *Auth {
+	if sessionTTL <= 0 {
+		sessionTTL = defaultSessionTTL
+	}
+	return &Auth{users: users, sessions: sessions, sessionTTL: sessionTTL}
 }
 
-func (s *Auth) Register(login, password string) error {
-	hashedPassword := passwordHash(password)
+func (s *Auth) Register(ctx context.Context, login, password string) error {
+	hashedPassword, err := passwordHash(password)
+	if err != nil {
+		log.Printf("register: hash password: %v", err)
+		return usecases.ErrServiceUnavailable
+	}
 	user := domain.User{ID: uuid.NewString(), Login: login, Password: hashedPassword}
-	if err := s.users.Save(user); errors.Is(err, repository.ErrAlreadyExists) {
-		existingUser, getErr := s.users.GetByLogin(login)
+	if err := s.users.Save(ctx, user); errors.Is(err, repository.ErrAlreadyExists) {
+		existingUser, getErr := s.users.GetByLogin(ctx, login)
 		if getErr != nil {
 			log.Printf("register: get existing user: %v", getErr)
 			return usecases.ErrServiceUnavailable
 		}
-		if subtle.ConstantTimeCompare([]byte(existingUser.Password), []byte(hashedPassword)) == 1 {
+		if bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(password)) == nil {
 			return nil
 		}
 		return usecases.ErrUserExists
@@ -43,8 +53,8 @@ func (s *Auth) Register(login, password string) error {
 	return nil
 }
 
-func (s *Auth) Login(login, password string) (string, error) {
-	user, err := s.users.GetByLogin(login)
+func (s *Auth) Login(ctx context.Context, login, password string) (string, error) {
+	user, err := s.users.GetByLogin(ctx, login)
 	if errors.Is(err, repository.ErrNotFound) {
 		return "", usecases.ErrInvalidCredentials
 	}
@@ -52,20 +62,20 @@ func (s *Auth) Login(login, password string) (string, error) {
 		log.Printf("login: get user: %v", err)
 		return "", usecases.ErrServiceUnavailable
 	}
-	if subtle.ConstantTimeCompare([]byte(user.Password), []byte(passwordHash(password))) != 1 {
+	if bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)) != nil {
 		return "", usecases.ErrInvalidCredentials
 	}
 
 	token := uuid.NewString()
-	if err := s.sessions.Save(domain.Session{UserID: user.ID, SessionID: token}); err != nil {
+	if err := s.sessions.Save(ctx, domain.Session{UserID: user.ID, SessionID: token, ExpiresAt: time.Now().Add(s.sessionTTL)}); err != nil {
 		log.Printf("login: save session: %v", err)
 		return "", usecases.ErrServiceUnavailable
 	}
 	return token, nil
 }
 
-func (s *Auth) Authenticate(token string) error {
-	_, err := s.sessions.Get(token)
+func (s *Auth) Authenticate(ctx context.Context, token string) error {
+	_, err := s.sessions.Get(ctx, token)
 	if errors.Is(err, repository.ErrNotFound) {
 		return usecases.ErrInvalidSession
 	}
@@ -76,7 +86,20 @@ func (s *Auth) Authenticate(token string) error {
 	return nil
 }
 
-func passwordHash(password string) string {
-	sum := sha256.Sum256([]byte(password))
-	return hex.EncodeToString(sum[:])
+func (s *Auth) Logout(ctx context.Context, token string) error {
+	if err := s.sessions.Delete(ctx, token); errors.Is(err, repository.ErrNotFound) {
+		return usecases.ErrInvalidSession
+	} else if err != nil {
+		log.Printf("logout: delete session: %v", err)
+		return usecases.ErrServiceUnavailable
+	}
+	return nil
+}
+
+func passwordHash(password string) (string, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hash), nil
 }

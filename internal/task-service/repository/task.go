@@ -1,8 +1,13 @@
 package repository
 
-import "postupashki-backend-start-hw3/internal/task-service/domain"
+import (
+	"context"
+
+	"postupashki-backend-start-hw3/internal/task-service/domain"
+)
 
 type Task interface {
-	Save(domain.Task) error
-	Get(string) (domain.Task, error)
+	Save(context.Context, domain.Task) error
+	Get(context.Context, string) (domain.Task, error)
+	Delete(context.Context, string) error
 }
