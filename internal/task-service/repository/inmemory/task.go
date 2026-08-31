@@ -27,3 +27,9 @@ func (r *Task) Get(id string) (domain.Task, bool) {
 	task, ok := r.tasks[id]
 	return task, ok
 }
+
+func (r *Task) Delete(id string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	delete(r.tasks, id)
+}

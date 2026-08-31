@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"time"
@@ -16,6 +17,8 @@ import (
 
 	"postupashki-backend-start-hw3/internal/code-processor/usecases"
 )
+
+const maxOutputSize = 1 << 20
 
 type runtimeConfig struct {
 	Image    string
@@ -99,7 +102,7 @@ func (r *Runner) Run(ctx context.Context, request usecases.RunRequest) (usecases
 	var stdout, stderr bytes.Buffer
 	outputDone := make(chan error, 1)
 	go func() {
-		_, err := stdcopy.StdCopy(&stdout, &stderr, attached.Reader)
+		_, err := stdcopy.StdCopy(&stdout, &stderr, io.LimitReader(attached.Reader, maxOutputSize))
 		outputDone <- err
 	}()
 	if _, err := r.docker.ContainerStart(runCtx, response.ID, client.ContainerStartOptions{}); err != nil {
