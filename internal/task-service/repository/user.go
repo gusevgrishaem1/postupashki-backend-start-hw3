@@ -1,8 +1,12 @@
 package repository
 
-import "postupashki-backend-start-hw3/internal/task-service/domain"
+import (
+	"context"
+
+	"postupashki-backend-start-hw3/internal/task-service/domain"
+)
 
 type User interface {
-	Save(domain.User) bool
-	GetByLogin(string) (domain.User, bool)
+	Save(context.Context, domain.User) error
+	GetByLogin(context.Context, string) (domain.User, error)
 }

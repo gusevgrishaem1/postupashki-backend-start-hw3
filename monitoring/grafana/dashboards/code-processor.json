@@ -1,0 +1,32 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Execution duration (p95)",
+      "targets": [{"expr": "histogram_quantile(0.95, sum(rate(code_processor_execution_duration_seconds_bucket[5m])) by (le, translator))", "legendFormat": "{{translator}}"}],
+      "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+    },
+    {
+      "type": "piechart",
+      "title": "Translator usage percentage",
+      "targets": [{"expr": "100 * sum(code_processor_translator_usage_total) by (translator) / scalar(sum(code_processor_translator_usage_total))", "legendFormat": "{{translator}}", "instant": true, "range": false}],
+      "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100}, "overrides": []},
+      "options": {
+        "pieType": "pie",
+        "reduceOptions": {"values": false, "calcs": ["lastNotNull"], "fields": ""},
+        "legend": {"displayMode": "table", "placement": "right", "showLegend": true, "values": ["percent"]},
+        "tooltip": {"mode": "multi", "sort": "desc"},
+        "displayLabels": ["name", "percent"]
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 41,
+  "tags": ["code-processor"],
+  "title": "Code Processor",
+  "uid": "code-processor"
+}

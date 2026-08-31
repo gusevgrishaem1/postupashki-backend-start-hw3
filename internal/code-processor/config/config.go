@@ -9,3 +9,10 @@ func RabbitMQURL() string {
 func TaskServiceURL() string {
 	return os.Getenv("TASK_SERVICE_URL")
 }
+
+func MetricsAddress() string {
+	if port := os.Getenv("METRICS_PORT"); port != "" {
+		return ":" + port
+	}
+	return ":9000"
+}
