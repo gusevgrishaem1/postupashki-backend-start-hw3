@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"time"
 
 	httpapi "postupashki-backend-start-hw3/internal/api/http"
 	"postupashki-backend-start-hw3/internal/config"
@@ -25,7 +26,9 @@ func main() {
 	userRepository := inmemory.NewUser()
 	sessionRepository := inmemory.NewSession()
 	taskService := service.NewTask(taskRepository)
-	authService := service.NewAuth(userRepository, sessionRepository)
+	const sessionTTL = 24 * time.Hour
+	authService := service.NewAuth(userRepository, sessionRepository, sessionTTL)
+	defer authService.Close()
 	server := httpapi.NewServer(taskService, authService)
 
 	log.Fatal(http.ListenAndServe(addr, server.Handler()))

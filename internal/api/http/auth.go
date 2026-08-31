@@ -63,15 +63,42 @@ func (h *Server) login(w http.ResponseWriter, r *http.Request) {
 	write(w, http.StatusOK, map[string]string{"token": token})
 }
 
+// logout godoc
+// @Summary Logout user
+// @Tags auth
+// @Security BearerAuth
+// @Success 204
+// @Failure 401 {object} map[string]string
+// @Router /logout [post]
+func (h *Server) logout(w http.ResponseWriter, r *http.Request) {
+	token, ok := bearerToken(r)
+	if !ok || h.auth.Logout(token) != nil {
+		write(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func readCredentials(w http.ResponseWriter, r *http.Request) (credentials, bool) {
+	const maxBodySize = 4 << 10 // 4 KiB
+
+	r.Body = http.MaxBytesReader(w, r.Body, maxBodySize)
+
 	var value credentials
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&value); err != nil {
+		var maxBytesErr *http.MaxBytesError
+		if errors.As(err, &maxBytesErr) {
+			write(w, http.StatusRequestEntityTooLarge, map[string]string{"error": "request body is too large"})
+			return credentials{}, false
+		}
 		write(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
 		return credentials{}, false
 	}
 	value.Username = strings.TrimSpace(value.Username)
+	value.Password = strings.TrimSpace(value.Password)
 	if value.Username == "" || value.Password == "" {
 		write(w, http.StatusBadRequest, map[string]string{"error": "username and password are required"})
 		return credentials{}, false
