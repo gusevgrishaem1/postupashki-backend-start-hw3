@@ -3,7 +3,6 @@ package rabbitmq
 import (
 	"context"
 	"encoding/json"
-	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 
@@ -35,13 +34,11 @@ func NewRabbitMQ(url string) (*RabbitMQ, error) {
 	return &RabbitMQ{connection: connection, channel: channel}, nil
 }
 
-func (b *RabbitMQ) Publish(submission contracts.Submission) error {
+func (b *RabbitMQ) Publish(ctx context.Context, submission contracts.Submission) error {
 	body, err := json.Marshal(submission)
 	if err != nil {
 		return err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
 	return b.channel.PublishWithContext(ctx, "", queue, false, false, amqp.Publishing{
 		ContentType: "application/json", DeliveryMode: amqp.Persistent, Body: body,
 	})

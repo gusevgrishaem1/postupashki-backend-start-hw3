@@ -1,6 +1,9 @@
 package usecases
 
-import "errors"
+import (
+	"context"
+	"errors"
+)
 
 var (
 	ErrUserExists         = errors.New("user already exists")
@@ -9,8 +12,8 @@ var (
 )
 
 type Auth interface {
-	Register(login, password string) error
-	Login(login, password string) (string, error)
-	Authenticate(token string) error
-	Logout(token string) error
+	Register(context.Context, string, string) error
+	Login(context.Context, string, string) (string, error)
+	Authenticate(context.Context, string) error
+	Logout(context.Context, string) error
 }

@@ -1,7 +1,11 @@
 package repository
 
-import "postupashki-backend-start-hw3/internal/contracts"
+import (
+	"context"
+
+	"postupashki-backend-start-hw3/internal/contracts"
+)
 
 type Publisher interface {
-	Publish(contracts.Submission) error
+	Publish(context.Context, contracts.Submission) error
 }
